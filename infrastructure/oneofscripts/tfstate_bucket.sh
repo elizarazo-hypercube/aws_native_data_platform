@@ -1,0 +1,1 @@
+aws s3api create-bucket --bucket hypercube-dataplatform-tfstate --region eu-west-1 --create-bucket-configuration LocationConstraint=eu-west-1
