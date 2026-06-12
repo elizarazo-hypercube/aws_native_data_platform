@@ -1,0 +1,68 @@
+name: Auto Tag and Release on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag and bump version
+        id: version
+        run: |
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+          fi
+
+          VERSION=${LATEST_TAG#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+
+          LABELS="${{ join(github.event.pull_request.labels.*.name, ',') }}"
+
+          if [[ $LABELS == *"major"* ]]; then
+            NEW_TAG="v$((MAJOR + 1)).0.0"
+          elif [[ $LABELS == *"minor"* ]]; then
+            NEW_TAG="v$MAJOR.$((MINOR + 1)).0"
+          else
+            NEW_TAG="v$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+
+          echo "Latest tag: $LATEST_TAG → New tag: $NEW_TAG"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.version.outputs.new_tag }}
+          git push origin ${{ steps.version.outputs.new_tag }}
+
+      - name: Build
+        run: |
+          echo "Add your build steps here"
+
+      - name: Test
+        run: |
+          echo "Add your test steps here"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          name: Release ${{ steps.version.outputs.new_tag }}
+          generate_release_notes: true
