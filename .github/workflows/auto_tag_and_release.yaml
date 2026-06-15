@@ -45,24 +45,34 @@ jobs:
           echo "Latest tag: $LATEST_TAG → New tag: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
+  testing:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    permissions:
+      contents: write
+    steps:
+
       - name: Create and push tag
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.version.outputs.new_tag }}
-          git push origin ${{ steps.version.outputs.new_tag }}
+          LATEST_TAG=$(git tag --sort=-v:refname | head -n 1)
+          echo "Latest tag: $LATEST_TAG
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git tag ${{ steps.version.outputs.new_tag }}
+      #     git push origin ${{ steps.version.outputs.new_tag }}
 
-      - name: Build
-        run: |
-          echo "Add your build steps here"
+      # - name: Build
+      #   run: |
+      #     echo "Add your build steps here"
 
-      - name: Test
-        run: |
-          echo "Add your test steps here"
+      # - name: Test
+      #   run: |
+      #     echo "Add your test steps here"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.new_tag }}
-          name: Release ${{ steps.version.outputs.new_tag }}
-          generate_release_notes: true
+      # - name: Create GitHub Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ steps.version.outputs.new_tag }}
+      #     name: Release ${{ steps.version.outputs.new_tag }}
+      #     generate_release_notes: true
+
